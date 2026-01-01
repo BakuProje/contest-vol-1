@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Modal Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .btn-press:active {
+            transform: scale(0.98);
+        }
+        
+        .modal-backdrop {
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-orange-900 via-orange-800 to-orange-900 min-h-screen p-4">
+    <div class="max-w-md mx-auto">
+        <!-- Form Container -->
+        <div class="bg-white/95 rounded-3xl shadow-2xl border border-orange-200 p-6 space-y-4">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Form Pendaftaran</h2>
+            
+            <!-- Other form fields would be here -->
+            
+            <!-- Vehicle Information Section -->
+            <div class="space-y-3">
+                <label class="text-xs font-semibold text-gray-800 uppercase tracking-wide flex items-center gap-2">
+                    🏍️ Informasi Kendaraan (2 Motor)
+                </label>
+                
+                <!-- Vehicle Summary Card -->
+                <div class="bg-orange-50/50 rounded-xl p-4 border border-orange-200" id="vehicleCard">
+                    <!-- Empty State (initially hidden) -->
+                    <div class="text-center py-6 hidden" id="emptyState">
+                        <div class="inline-flex items-center justify-center w-12 h-12 bg-orange-100 rounded-full mb-3">
+                            🏍️
+                        </div>
+                        <p class="text-sm text-gray-600 mb-4">Belum ada informasi kendaraan</p>
+                        <button onclick="openModal()" class="h-10 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold px-4 rounded-lg btn-press">
+                            ➕ Tambah Informasi Kendaraan
+                        </button>
+                    </div>
+                    
+                    <!-- Filled State -->
+                    <div class="space-y-3" id="filledState">
+                        <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-orange-100">
+                            <div class="flex-1">
+                                <h4 class="text-sm font-semibold text-gray-700 mb-1">Motor 1</h4>
+                                <p class="text-xs text-gray-600">Yamaha Mio Sporty</p>
+                                <p class="text-xs text-gray-500">DD 1234 AB</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-orange-100">
+                            <div class="flex-1">
+                                <h4 class="text-sm font-semibold text-gray-700 mb-1">Motor 2</h4>
+                                <p class="text-xs text-gray-600">Honda Beat</p>
+                                <p class="text-xs text-gray-500">DD 5678 CD</p>
+                            </div>
+                        </div>
+                        <button onclick="openModal()" class="w-full h-10 border-2 border-orange-300 text-orange-600 hover:bg-orange-50 rounded-lg btn-press">
+                            ✏️ Edit Informasi Kendaraan
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Other form fields would continue here -->
+            <div class="h-20 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500 text-sm">
+                ... field lainnya ...
+            </div>
+        </div>
+    </div>
+
+    <!-- Vehicle Modal -->
+    <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 modal-backdrop hidden" id="vehicleModal">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-w-lg w-full mx-0 sm:mx-4 max-h-[95vh] sm:max-h-[90vh] overflow-hidden animate-fade-in flex flex-col">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-orange-500 to-orange-600 p-4 sm:p-6 text-center relative flex-shrink-0">
+                <button onclick="closeModal()" class="absolute top-3 sm:top-4 right-3 sm:right-4 text-white/80 hover:text-white btn-press">
+                    ✕
+                </button>
+                <div class="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-full mb-2 sm:mb-4">
+                    🏍️
+                </div>
+                <h3 class="text-lg sm:text-xl font-bold text-white mb-1 sm:mb-2">Informasi Kendaraan</h3>
+                <p class="text-orange-100 text-xs sm:text-sm">Tambahkan informasi motor Anda (maksimal 4 motor)</p>
+            </div>
+
+            <!-- Content -->
+            <div class="p-4 sm:p-6 flex-1 overflow-y-auto min-h-0" style="-webkit-overflow-scrolling: touch;">
+                <div class="space-y-4">
+                    <!-- Add Vehicle Button -->
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-sm font-semibold text-gray-700">Total Motor: 2</h4>
+                        <button onclick="addVehicle()" class="h-8 px-3 text-xs border-2 border-orange-300 text-orange-600 hover:bg-orange-50 rounded-lg btn-press">
+                            ➕ Tambah Motor
+                        </button>
+                    </div>
+
+                    <!-- Vehicle Forms -->
+                    <div class="bg-orange-50/50 rounded-xl p-4 space-y-3 border border-orange-200">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-semibold text-gray-700">Motor 1</h4>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-medium text-gray-700">Jenis Kendaraan</label>
+                            <input type="text" placeholder="Contoh: Mio Sporty, Mio Smile, dll" value="Yamaha Mio Sporty" class="w-full h-10 sm:h-10 text-sm border-2 border-orange-200 focus:border-orange-400 rounded-lg px-3" style="font-size: 16px;">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-medium text-gray-700">Nomor Plat</label>
+                            <input type="text" placeholder="Contoh: DD 1234 AB" value="DD 1234 AB" class="w-full h-10 sm:h-10 text-sm border-2 border-orange-200 focus:border-orange-400 rounded-lg px-3" style="font-size: 16px;">
+                        </div>
+                    </div>
+
+                    <div class="bg-orange-50/50 rounded-xl p-4 space-y-3 border border-orange-200">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-semibold text-gray-700">Motor 2</h4>
+                            <button onclick="removeVehicle()" class="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50 rounded btn-press">
+                                ➖
+                            </button>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-medium text-gray-700">Jenis Kendaraan</label>
+                            <input type="text" placeholder="Contoh: Mio Sporty, Mio Smile, dll" value="Honda Beat" class="w-full h-10 sm:h-10 text-sm border-2 border-orange-200 focus:border-orange-400 rounded-lg px-3" style="font-size: 16px;">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-medium text-gray-700">Nomor Plat</label>
+                            <input type="text" placeholder="Contoh: DD 1234 AB" value="DD 5678 CD" class="w-full h-10 sm:h-10 text-sm border-2 border-orange-200 focus:border-orange-400 rounded-lg px-3" style="font-size: 16px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-4 sm:p-6 border-t border-gray-200 bg-gray-50/50 flex-shrink-0" style="padding-bottom: max(1rem, env(safe-area-inset-bottom));">
+                <div class="flex gap-2 sm:gap-3">
+                    <button onclick="closeModal()" class="flex-1 h-11 text-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg btn-press" style="min-height: 44px;">
+                        Batal
+                    </button>
+                    <button onclick="saveVehicles()" class="flex-1 h-11 text-sm bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-lg btn-press" style="min-height: 44px;">
+                        💾 Simpan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openModal() {
+            document.getElementById('vehicleModal').classList.remove('hidden');
+            // Prevent body scroll on mobile
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.width = '100%';
+        }
+
+        function closeModal() {
+            document.getElementById('vehicleModal').classList.add('hidden');
+            // Re-enable body scroll
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+        }
+
+        function saveVehicles() {
+            closeModal();
+            // In real app, this would save the data
+            alert('Data kendaraan berhasil disimpan!');
+        }
+
+        function addVehicle() {
+            alert('Fitur tambah motor akan menambah form baru');
+        }
+
+        function removeVehicle() {
+            alert('Motor akan dihapus dari daftar');
+        }
+
+        function toggleState() {
+            const emptyState = document.getElementById('emptyState');
+            const filledState = document.getElementById('filledState');
+            
+            if (emptyState.classList.contains('hidden')) {
+                emptyState.classList.remove('hidden');
+                filledState.classList.add('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                filledState.classList.remove('hidden');
+            }
+        }
+    </script>
+
+    <!-- Demo Controls -->
+    <div class="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg p-4">
+        <h4 class="text-sm font-semibold mb-2">Demo Controls</h4>
+        <button onclick="toggleState()" class="text-xs bg-blue-500 text-white px-3 py-1 rounded">
+            Toggle Empty/Filled State
+        </button>
+    </div>
+</body>
+</html>

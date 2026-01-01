@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#ea580c" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <title>CONTEST VOL 1</title>
+    <meta name="description" content="FUN BIKE CONTEST VOL 1" />
+    <meta name="author" content="FUN BIKE CONTEST VOL 1" />
+    <link rel="icon" type="image/png" href="/logo5tl.png" />
+    <link rel="apple-touch-icon" href="/logo5tl.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta property="og:title" content="CONTEST VOL 1" />
+    <meta property="og:description" content="FUN BIKE CONTEST VOL 1" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://files.catbox.moe/2f4awa.png" />
+    <meta name="twitter:card" content="https://files.catbox.moe/2f4awa.png" />
+    <meta name="twitter:site" content="@5tl_makassar" />
+    <meta name="twitter:image" content="https://files.catbox.moe/2f4awa.png" />
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/logo5tl.png" as="image" />
+    <link rel="preload" href="/whatsapp.svg" as="image" />
+    <link rel="preload" href="/motorcycle.svg" as="image" />
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Service Worker Registration - Disabled for production -->
+    <!-- <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+              console.log('SW registered: ', registration);
+            })
+            .catch(function(registrationError) {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script> -->
+  </body>
+</html>
