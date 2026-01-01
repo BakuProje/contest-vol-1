@@ -39,14 +39,44 @@ interface FormData {
 
 export function RegistrationForm() {
   const { toast } = useToast();
-  const { isLocationAllowed, currentLocation, error: gpsError, duplicateUser } = useGPSSecurity();
+  
+  // Initialize hooks with error handling
+  let gpsHookResult;
+  let locationPermissionResult;
+  
+  try {
+    gpsHookResult = useGPSSecurity();
+  } catch (error) {
+    console.error('GPS Security Hook Error:', error);
+    gpsHookResult = {
+      isLocationAllowed: true,
+      currentLocation: null,
+      error: null,
+      duplicateUser: null
+    };
+  }
+  
+  try {
+    locationPermissionResult = useLocationPermission();
+  } catch (error) {
+    console.error('Location Permission Hook Error:', error);
+    locationPermissionResult = {
+      permissionStatus: 'unknown',
+      isModalOpen: false,
+      hasLocation: false,
+      hideModal: () => {},
+      checkPermission: async () => {}
+    };
+  }
+  
+  const { isLocationAllowed, currentLocation, error: gpsError, duplicateUser } = gpsHookResult;
   const { 
     permissionStatus, 
     isModalOpen, 
     hasLocation, 
     hideModal, 
     checkPermission 
-  } = useLocationPermission();
+  } = locationPermissionResult;
 
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [showErrorPopup, setShowErrorPopup] = useState(false);

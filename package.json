@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "pre-deploy": "node pre-deploy-check.js",
-    "deploy": "npm run pre-deploy && npm run build"
+    "deploy": "npm run pre-deploy && npm run build",
+    "debug-registration": "node debug-registration.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
