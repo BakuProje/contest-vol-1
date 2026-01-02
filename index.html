@@ -21,7 +21,7 @@
     <meta name="twitter:site" content="@5tl_makassar" />
     <meta name="twitter:image" content="https://files.catbox.moe/2f4awa.png" />
     
-    <!-- Preload critical resources -->
+
     <link rel="preload" href="/logo5tl.png" as="image" />
     <link rel="preload" href="/whatsapp.svg" as="image" />
     <link rel="preload" href="/motorcycle.svg" as="image" />
@@ -30,20 +30,5 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    
-    <!-- Service Worker Registration - Disabled for production -->
-    <!-- <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js')
-            .then(function(registration) {
-              console.log('SW registered: ', registration);
-            })
-            .catch(function(registrationError) {
-              console.log('SW registration failed: ', registrationError);
-            });
-        });
-      }
-    </script> -->
   </body>
 </html>
