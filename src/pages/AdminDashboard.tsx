@@ -47,6 +47,7 @@ interface Registration {
   vehicle_type?: string;
   plate_number?: string;
   category?: string;
+  selected_categories?: string[] | null;
   package_type: "contest" | "meetup";
   selected_packages?: string[] | null;
   proof_url: string;
@@ -837,9 +838,31 @@ export default function AdminDashboard() {
                           style={{ filter: 'hue-rotate(20deg) saturate(1.5) brightness(1.2)' }}
                         />
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <p className="text-xs text-slate-400 font-medium">Kategori</p>
-                        <p className="text-lg font-bold text-white">{selectedRegistration.category}</p>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {(() => {
+                            // Get categories from selected_categories or split category string
+                            let categories: string[] = [];
+                            
+                            if (selectedRegistration.selected_categories && selectedRegistration.selected_categories.length > 0) {
+                              categories = selectedRegistration.selected_categories;
+                            } else if (selectedRegistration.category) {
+                              // Split by comma if category contains comma-separated values
+                              categories = selectedRegistration.category.split(',').map(c => c.trim()).filter(c => c);
+                            }
+                            
+                            return categories.map((cat, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-lg text-sm font-semibold"
+                              >
+                                <span className="text-orange-300 font-bold">{idx + 1}.</span>
+                                <span>{cat}</span>
+                              </span>
+                            ));
+                          })()}
+                        </div>
                       </div>
                     </div>
                   </div>

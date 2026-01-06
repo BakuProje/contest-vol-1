@@ -43,6 +43,7 @@ export type Database = {
           package_type: Database["public"]["Enums"]["package_type"]
           plate_number: string | null
           proof_url: string
+          selected_categories: string[] | null
           selected_packages: string[] | null
           status: Database["public"]["Enums"]["registration_status"]
           updated_at: string
@@ -60,6 +61,7 @@ export type Database = {
           package_type: Database["public"]["Enums"]["package_type"]
           plate_number?: string | null
           proof_url: string
+          selected_categories?: string[] | null
           selected_packages?: string[] | null
           status?: Database["public"]["Enums"]["registration_status"]
           updated_at?: string
@@ -77,6 +79,7 @@ export type Database = {
           package_type?: Database["public"]["Enums"]["package_type"]
           plate_number?: string | null
           proof_url?: string
+          selected_categories?: string[] | null
           selected_packages?: string[] | null
           status?: Database["public"]["Enums"]["registration_status"]
           updated_at?: string

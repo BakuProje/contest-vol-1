@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PackageSelector } from "@/components/PackageSelector";
+import { CategorySelector } from "@/components/CategorySelector";
 import { TransferInfo } from "@/components/TransferInfo";
 import { FileUpload } from "@/components/FileUpload";
 import { LocationCapture } from "@/components/LocationCapture";
@@ -29,7 +30,7 @@ interface FormData {
   fullName: string;
   whatsapp: string;
   vehicles: Vehicle[];
-  category: string;
+  categories: string[]; // Changed from category to categories (array)
   proofFile: File | null;
   location: {
     latitude: number;
@@ -70,7 +71,7 @@ export function RegistrationForm() {
     fullName: "",
     whatsapp: "",
     vehicles: [{ vehicleType: "", plateNumber: "" }],
-    category: "",
+    categories: [], // Changed from category to categories (empty array)
     proofFile: null,
     location: null,
   });
@@ -112,9 +113,12 @@ export function RegistrationForm() {
       }
     });
 
-    if (!formData.category) {
-      newErrors.category = "Kategori wajib dipilih";
+    // Validate categories (at least 1, max 3)
+    if (!formData.categories || formData.categories.length === 0) {
+      newErrors.categories = "Minimal pilih 1 kategori";
       missingFields.push("Kategori");
+    } else if (formData.categories.length > 3) {
+      newErrors.categories = "Maksimal 3 kategori";
     }
 
     if (!formData.proofFile) {
@@ -158,13 +162,12 @@ export function RegistrationForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check GPS security first (hidden from user)
-    if (!isLocationAllowed) {
-      setErrorMessage("Maaf, terjadi masalah dengan pendaftaran Anda. Silakan coba lagi nanti atau hubungi admin.");
-      setShowErrorPopup(true);
+    // Prevent double submission
+    if (isSubmitting) {
       return;
     }
 
+    // Validate form first
     if (!validateForm()) {
       setShowErrorPopup(true);
       return;
@@ -193,7 +196,7 @@ export function RegistrationForm() {
         console.log('✅ Fallback location obtained:', locationToUse);
       } catch (error) {
         console.log('❌ Fallback location failed:', error);
-        // Continue without location
+        // Continue without location - location is optional
       }
     }
 
@@ -209,72 +212,75 @@ export function RegistrationForm() {
     // Use regular submit function
     try {
       setIsSubmitting(true);
-        // Check for duplicate name and phone
-        const { data: existingRegistrations } = await supabase
-          .from('registrations')
-          .select('id, full_name, whatsapp, latitude, longitude')
-          .or(`full_name.eq.${formData.fullName.trim()},whatsapp.eq.${formData.whatsapp.trim()}`);
+      
+      // Check for duplicate name and phone
+      const { data: existingRegistrations } = await supabase
+        .from('registrations')
+        .select('id, full_name, whatsapp, latitude, longitude')
+        .or(`full_name.eq.${formData.fullName.trim()},whatsapp.eq.${formData.whatsapp.trim()}`);
 
-        if (existingRegistrations && existingRegistrations.length > 0) {
-          // Check for exact name and phone match
-          const exactMatch = existingRegistrations.find(reg => 
-            reg.full_name === formData.fullName.trim() && reg.whatsapp === formData.whatsapp.trim()
-          );
-          
-          if (exactMatch) {
-            setErrorMessage("Nama dan nomor WhatsApp ini sudah terdaftar. Gunakan nama atau nomor yang berbeda.");
-            setShowErrorPopup(true);
+      if (existingRegistrations && existingRegistrations.length > 0) {
+        // Check for exact name and phone match
+        const exactMatch = existingRegistrations.find(reg => 
+          reg.full_name === formData.fullName.trim() && reg.whatsapp === formData.whatsapp.trim()
+        );
+        
+        if (exactMatch) {
+          setErrorMessage("Nama dan nomor WhatsApp ini sudah terdaftar. Gunakan nama atau nomor yang berbeda.");
+          setShowErrorPopup(true);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // Check for duplicate location if location is available (optional check)
+      if (locationToUse?.latitude && locationToUse?.longitude) {
+        const { data: locationRegistrations } = await supabase
+          .from('registrations')
+          .select('id, full_name, latitude, longitude')
+          .not('latitude', 'is', null)
+          .not('longitude', 'is', null);
+
+        if (locationRegistrations && locationRegistrations.length > 0) {
+          // Check if any registration is within 50 meters using Haversine formula
+          const duplicateLocation = locationRegistrations.find(reg => {
+            if (!reg.latitude || !reg.longitude) return false;
+            
+            // Calculate distance using Haversine formula for more accuracy
+            const R = 6371e3; // Earth's radius in meters
+            const φ1 = locationToUse!.latitude * Math.PI/180;
+            const φ2 = reg.latitude * Math.PI/180;
+            const Δφ = (reg.latitude - locationToUse!.latitude) * Math.PI/180;
+            const Δλ = (reg.longitude - locationToUse!.longitude) * Math.PI/180;
+
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const distance = R * c; // Distance in meters
+
+            return distance < 50; // 50 meters threshold for higher accuracy
+          });
+
+          if (duplicateLocation) {
+            // Show specific duplicate location popup instead of generic error
+            setDuplicateUserInfo(duplicateLocation.full_name);
+            setShowDuplicatePopup(true);
+            setIsSubmitting(false);
             return;
           }
         }
+      } else {
+        // If no location data, show warning but allow registration
+        console.warn("⚠️ No location data available - registration will proceed without location");
+      }
 
-        // Check for duplicate location if location is available
-        if (locationToUse?.latitude && locationToUse?.longitude) {
-          const { data: locationRegistrations } = await supabase
-            .from('registrations')
-            .select('id, full_name, latitude, longitude')
-            .not('latitude', 'is', null)
-            .not('longitude', 'is', null);
+      // Upload proof image
+      const proofUrl = await uploadProofImage(formData.proofFile!);
 
-          if (locationRegistrations && locationRegistrations.length > 0) {
-            // Check if any registration is within 50 meters using Haversine formula
-            const duplicateLocation = locationRegistrations.find(reg => {
-              if (!reg.latitude || !reg.longitude) return false;
-              
-              // Calculate distance using Haversine formula for more accuracy
-              const R = 6371e3; // Earth's radius in meters
-              const φ1 = locationToUse!.latitude * Math.PI/180;
-              const φ2 = reg.latitude * Math.PI/180;
-              const Δφ = (reg.latitude - locationToUse!.latitude) * Math.PI/180;
-              const Δλ = (reg.longitude - locationToUse!.longitude) * Math.PI/180;
-
-              const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                        Math.cos(φ1) * Math.cos(φ2) *
-                        Math.sin(Δλ/2) * Math.sin(Δλ/2);
-              const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-              const distance = R * c; // Distance in meters
-
-              return distance < 50; // 50 meters threshold for higher accuracy
-            });
-
-            if (duplicateLocation) {
-              // Show specific duplicate location popup instead of generic error
-              setDuplicateUserInfo(duplicateLocation.full_name);
-              setShowDuplicatePopup(true);
-              return;
-            }
-          }
-        } else {
-          // If no location data, show warning but allow registration
-          console.warn("No location data available for duplicate check");
-        }
-
-        // Upload proof image
-        const proofUrl = await uploadProofImage(formData.proofFile!);
-
-        // Insert registration data - now handling multiple vehicles and packages
-        // Parse selected packages
-        const selectedPackages = formData.packageType.includes(',') 
+      // Insert registration data - now handling multiple vehicles and packages
+      // Parse selected packages
+      const selectedPackages = formData.packageType.includes(',') 
           ? formData.packageType.split(',').map(p => p.trim())
           : [formData.packageType];
         
@@ -286,7 +292,8 @@ export function RegistrationForm() {
           whatsapp: formData.whatsapp.trim(),
           vehicle_type: formData.vehicles.map(v => v.vehicleType.trim()).join(', '),
           plate_number: formData.vehicles.map(v => v.plateNumber.trim()).join(', '),
-          category: formData.category,
+          category: formData.categories.join(', '), // Join categories with comma
+          selected_categories: formData.categories, // Store as array
           package_type: primaryPackage,
           selected_packages: selectedPackages,
           proof_url: proofUrl,
@@ -318,7 +325,7 @@ export function RegistrationForm() {
           fullName: "",
           whatsapp: "",
           vehicles: [{ vehicleType: "", plateNumber: "" }],
-          category: "",
+          categories: [], // Reset to empty array
           proofFile: null,
           location: null,
         });
@@ -343,7 +350,7 @@ export function RegistrationForm() {
       fullName: "",
       whatsapp: "",
       vehicles: [{ vehicleType: "", plateNumber: "" }],
-      category: "",
+      categories: [], // Reset to empty array
       proofFile: null,
       location: null,
     });
@@ -558,28 +565,15 @@ export function RegistrationForm() {
                   className="w-4 h-4"
                   style={{ filter: 'hue-rotate(20deg) saturate(1.5) brightness(0.8)' }}
                 />
-                Kategori Contest
+                Kategori Contest (Pilih 1-3)
               </Label>
-              <Select value={formData.category} onValueChange={(value) => updateField("category", value)}>
-                <SelectTrigger className={`h-10 sm:h-11 text-sm border-2 transition-colors ${errors.category ? "border-red-500" : "border-orange-300"} focus:border-orange-500`}>
-                  <SelectValue placeholder="Pilih Kategori Contest" />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {categories.map((category, index) => (
-                    <SelectItem key={index} value={category} className="py-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-orange-600 font-semibold text-sm">{index + 1}.</span>
-                        <span className="text-sm">{category}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.category && (
-                <p className="text-xs text-red-500">
-                  {errors.category}
-                </p>
-              )}
+              <CategorySelector
+                categories={categories}
+                selectedCategories={formData.categories}
+                onChange={(categories) => updateField("categories", categories)}
+                maxSelection={3}
+                error={errors.categories}
+              />
             </div>
 
             {/* Package Selection */}
@@ -590,9 +584,9 @@ export function RegistrationForm() {
               <PackageSelector
                 value={formData.packageType}
                 onChange={(value) => updateField("packageType", value)}
-                disabled={!formData.category}
+                disabled={formData.categories.length === 0}
               />
-              {!formData.category && (
+              {formData.categories.length === 0 && (
                 <p className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
                   Silakan pilih kategori contest terlebih dahulu
                 </p>
@@ -637,22 +631,13 @@ export function RegistrationForm() {
             <div className="pt-2 space-y-3">
               <Button
                 type="submit"
-                className={`w-full h-12 font-bold rounded-xl shadow-lg transition-all duration-200 text-base ${
-                  !isLocationAllowed 
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white'
-                }`}
-                disabled={isSubmitting || !isLocationAllowed}
+                className="w-full h-12 font-bold rounded-xl shadow-lg transition-all duration-200 text-base bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     Mengirim...
-                  </>
-                ) : !isLocationAllowed ? (
-                  <>
-                    <X className="h-4 w-4 mr-2" />
-                    Tidak Dapat Mendaftar
                   </>
                 ) : (
                   <>
