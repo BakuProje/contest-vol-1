@@ -108,7 +108,7 @@ export default function AdminDashboard() {
     const { data, error } = await supabase
       .from("registrations")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: true }); // Changed to ascending - oldest first
 
     if (error) {
       toast({
@@ -128,7 +128,7 @@ export default function AdminDashboard() {
     const { data, error } = await supabase
       .from("registrations")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: true }); // Changed to ascending - oldest first
 
     if (error) {
       toast({
@@ -317,8 +317,40 @@ export default function AdminDashboard() {
     }).format(total);
   };
 
-  const filteredRegistrations = registrations.filter((reg) => {
-    const matchesSearch = reg.full_name.toLowerCase().includes(searchQuery.toLowerCase());
+  // Add original index to each registration for consistent numbering
+  const registrationsWithIndex = registrations.map((reg, index) => ({
+    ...reg,
+    originalIndex: index + 1
+  }));
+
+  const filteredRegistrations = registrationsWithIndex.filter((reg) => {
+    // Enhanced search - search by name, registration number (#1, #2, etc), or WhatsApp number
+    const searchLower = searchQuery.toLowerCase().trim();
+    const registrationNumber = reg.originalIndex.toString();
+    
+    // Check if searching by registration number (with or without #)
+    // Only treat as registration number if it's a short number (1-3 digits)
+    const isShortNumber = /^#?\d{1,3}$/.test(searchLower);
+    
+    if (isShortNumber) {
+      // Exact match for registration number
+      const searchNumber = searchLower.replace('#', '');
+      const matchesRegistrationNumber = registrationNumber === searchNumber;
+      
+      // Apply filters
+      const packages = reg.selected_packages && reg.selected_packages.length > 0 
+        ? reg.selected_packages 
+        : [reg.package_type];
+      const matchesPackage = filterPackage === "all" || packages.includes(filterPackage);
+      const matchesStatus = filterStatus === "all" || reg.status === filterStatus;
+      
+      return matchesRegistrationNumber && matchesPackage && matchesStatus;
+    }
+    
+    // For longer numbers or text search (name or WhatsApp), use partial match
+    const matchesSearch = 
+      reg.full_name.toLowerCase().includes(searchLower) ||
+      reg.whatsapp.includes(searchQuery.trim());
     
     // Check if registration matches the package filter
     const packages = reg.selected_packages && reg.selected_packages.length > 0 
@@ -521,7 +553,7 @@ export default function AdminDashboard() {
                     <Search className="h-5 w-5 text-slate-500" />
                   </div>
                   <Input
-                    placeholder="Cari nama pendaftar..."
+                    placeholder="Cari User"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="search-input pl-12 bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-orange-500/50"
@@ -569,12 +601,12 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div className="p-4 space-y-4">
-                  {filteredRegistrations.map((reg, index) => (
+                  {filteredRegistrations.map((reg) => (
                     <div key={reg.id} className="bg-slate-900/50 rounded-xl border border-slate-700/30 p-6 hover:bg-slate-700/20 transition-colors duration-200 admin-card">
                       {/* Header with No and Status */}
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-4">
-                          <span className="text-base text-slate-400 font-medium">#{index + 1}</span>
+                          <span className="text-base text-slate-400 font-medium">#{reg.originalIndex}</span>
                           <h3 className="font-semibold text-white text-xl">{reg.full_name}</h3>
                         </div>
                         <span
